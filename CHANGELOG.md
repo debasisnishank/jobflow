@@ -1,6 +1,6 @@
 # Changelog
 
-> **Version History:** This changelog documents all major changes, new features, and improvements made to CareersHUB. All changes are backward compatible unless otherwise noted.
+> **Version History:** This changelog documents all major changes, new features, and improvements made to Jobflow. All changes are backward compatible unless otherwise noted.
 
 ## Version 2.0.1 - Patch Release (January 30, 2026)
 

@@ -2,7 +2,7 @@
 
 ###  Initial Release
 
-This is the first major release of CareersHUB, featuring a complete redesign and comprehensive feature set.
+This is the first major release of Jobflow, featuring a complete redesign and comprehensive feature set.
 
 ###  New Features
 

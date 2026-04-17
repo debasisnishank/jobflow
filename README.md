@@ -132,7 +132,7 @@ OPENAI_API_KEY=sk-your-key-here
 
 ## Credit Plans
 
-CareersHUB offers three credit plan tiers:
+Jobflow offers three credit plan tiers:
 
 ### Free Plan
 - 10 job applications

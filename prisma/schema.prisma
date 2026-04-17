@@ -1,0 +1,634 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Step: 1 run `npx prisma generate` 
+// Step: 2 run `npx prisma db push` after update (MongoDB uses db push instead of migrate)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  // Password reset fields
+  resetPasswordToken     String?
+  resetPasswordExpires  DateTime?
+
+  // Email verification fields
+  emailVerified          Boolean   @default(false)
+  emailVerificationToken String?
+  emailVerificationExpires DateTime?
+
+  // Subscription fields
+  subscriptionPlan     String  @default("free") // free, freshers, experience
+  razorpayCustomerId   String?
+  razorpaySubscriptionId String?
+
+  // Role-based access control
+  role                 String  @default("user") // "user" or "admin"
+
+  jobsApplied         Job[]
+  JobTitle            JobTitle[]
+  Location            Location[]
+  Company             Company[]
+  Contact             Contact[]
+  Profile             Profile[]
+  Activity            Activity[]
+  ActivityType        ActivityType[]
+  CoverLetterTemplate CoverLetterTemplate[]
+  MockInterviewSessions MockInterviewSession[]
+  AIToolboxHistory     AIToolboxHistory[]
+  AiUsages             AiUsage[]
+}
+
+model Profile {
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String   @db.ObjectId
+  user    User     @relation(fields: [userId], references: [id])
+  resumes Resume[]
+}
+
+model Resume {
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  profileId      String          @db.ObjectId
+  title          String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  
+  template       String          @default("modern")
+  primaryColor   String          @default("#3B82F6")
+  
+  atsScore       Int?
+  atsAnalysis    String?
+  keywords       String[]        @default([])
+  missingKeywords String[]       @default([])
+  
+  aiGenerated    Boolean         @default(false)
+  lastOptimizedAt DateTime?
+  
+  ContactInfo    ContactInfo?
+  ResumeSections ResumeSection[]
+  Skills         Skill[]
+  profile        Profile         @relation(fields: [profileId], references: [id])
+  File           File?           @relation("FileToResume", fields: [FileId], references: [id])
+  FileId         String?         @db.ObjectId
+  Job            Job[]
+  MockInterviewSessions MockInterviewSession[]
+  AIToolboxHistories AIToolboxHistory[]
+
+  @@unique([profileId, title])
+  @@index([profileId])
+  @@index([FileId])
+}
+
+model File {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  fileName    String
+  fileType    String
+  fileSize    Int? // File size in bytes (optional for legacy files)
+  fileContent Bytes // Binary file content stored in MongoDB
+  uploadedAt  DateTime @default(now())
+  Resumes     Resume[] @relation("FileToResume")
+}
+
+model ResumeSection {
+  id                      String                   @id @default(auto()) @map("_id") @db.ObjectId
+  resumeId                String                   @db.ObjectId
+  sectionTitle            String
+  sectionType             String
+  summaryId               String?                  @db.ObjectId
+  summary                 Summary?                 @relation(fields: [summaryId], references: [id])
+  workExperiences         WorkExperience[]
+  educations              Education[]
+  licenseOrCertifications LicenseOrCertification[]
+  others                  OtherSection[]
+  Resume                  Resume                   @relation(fields: [resumeId], references: [id])
+}
+
+model ContactInfo {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  resumeId  String   @unique @db.ObjectId
+  firstName String
+  lastName  String
+  headline  String
+  email     String
+  phone     String
+  address   String?
+  resume    Resume   @relation(fields: [resumeId], references: [id])
+}
+
+model Summary {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  content       String
+  ResumeSection ResumeSection[]  @relation
+}
+
+model WorkExperience {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  companyId       String         @db.ObjectId
+  Company         Company        @relation(fields: [companyId], references: [id])
+  jobTitleId      String         @db.ObjectId
+  jobTitle        JobTitle       @relation(fields: [jobTitleId], references: [id])
+  startDate       DateTime
+  endDate         DateTime?
+  description     String
+  locationId      String         @db.ObjectId
+  location        Location       @relation(fields: [locationId], references: [id])
+  resumeSectionId String?        @db.ObjectId
+  ResumeSection   ResumeSection? @relation(fields: [resumeSectionId], references: [id])
+}
+
+model Education {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  institution     String
+  degree          String
+  fieldOfStudy    String
+  startDate       DateTime
+  endDate         DateTime?
+  description     String?
+  locationId      String         @db.ObjectId
+  location        Location       @relation(fields: [locationId], references: [id])
+  resumeSectionId String?        @db.ObjectId
+  ResumeSection   ResumeSection? @relation(fields: [resumeSectionId], references: [id])
+}
+
+model LicenseOrCertification {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  organization    String
+  issueDate       DateTime?
+  expirationDate  DateTime?
+  credentialUrl   String?
+  ResumeSection   ResumeSection? @relation(fields: [resumeSectionId], references: [id])
+  resumeSectionId String?        @db.ObjectId
+}
+
+model OtherSection {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  title           String
+  content         String
+  ResumeSection   ResumeSection? @relation(fields: [resumeSectionId], references: [id])
+  resumeSectionId String?        @db.ObjectId
+}
+
+model Skill {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  level       String?
+  category    String?
+  resumeId    String   @db.ObjectId
+  resume      Resume   @relation(fields: [resumeId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Contact {
+  id            String              @id @default(auto()) @map("_id") @db.ObjectId
+  firstName     String
+  lastName      String?
+  email         String?
+  phone         String?
+  title         String?
+  company       String?
+  linkedInUrl   String?
+  notes         String?
+  tags          String[]           @default([])
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  createdBy     String              @db.ObjectId
+  user          User                @relation(fields: [createdBy], references: [id])
+  Interview     Interview?           @relation(fields: [interviewId], references: [id])
+  interviewId   String?              @db.ObjectId
+  Interactions  ContactInteraction[]
+  linkedJobs    JobContact[]
+  
+  @@index([createdBy])
+  @@index([email])
+}
+
+model JobTitle {
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  label           String
+  value           String
+  jobs            Job[]
+  createdBy       String           @db.ObjectId // userId
+  user            User             @relation(fields: [createdBy], references: [id])
+  workExperiences WorkExperience[]
+
+  @@unique([createdBy, value])
+}
+
+model JobStatus {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  label String
+  value String @unique
+  jobs  Job[]
+}
+
+model Location {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  label          String
+  value          String
+  stateProv      String?
+  country        String?
+  jobsApplied    Job[]
+  createdBy      String           @db.ObjectId // userId
+  user           User             @relation(fields: [createdBy], references: [id])
+  educations     Education[]
+  workExperience WorkExperience[]
+}
+
+model Company {
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  label           String
+  value           String
+  jobsApplied     Job[]
+  logoUrl         String? // field is optional
+  createdBy       String           @db.ObjectId // userId
+  user            User             @relation(fields: [createdBy], references: [id])
+  workExperiences WorkExperience[]
+
+  @@unique([createdBy, value])
+}
+
+model JobSource {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  label       String
+  value       String @unique
+  jobsApplied Job[]
+}
+
+model Interview {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  jobId           String    @db.ObjectId
+  job             Job?      @relation(fields: [jobId], references: [id])
+  interviewers    Contact[]
+  
+  // Interview details
+  type            String    // phone, video, onsite, other
+  round           Int       @default(1) // Interview round number
+  status          String    @default("scheduled") // scheduled, completed, cancelled, rescheduled, no_show
+  scheduledDate   DateTime?
+  scheduledTime   String?   // Time string (e.g., "14:30")
+  duration        Int?      // Duration in minutes
+  location        String?   // Physical location or meeting link
+  meetingLink     String?   // Video call link (Zoom, Teams, etc.)
+  
+  // Interview content
+  notes           String?
+  questions       String[]  @default([]) // Interview questions asked
+  feedback        String?   // Interview feedback/rating
+  rating          Int?      // Rating out of 10
+  outcome         String?   // positive, negative, neutral, pending
+  
+  // Additional metadata
+  interviewerNames String[] @default([]) // Names of interviewers if not in contacts
+  preparationNotes String?  // Pre-interview preparation notes
+}
+
+model Job {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String        @db.ObjectId
+  User         User          @relation(fields: [userId], references: [id])
+  jobUrl       String?
+  description  String
+  jobType      String
+  createdAt    DateTime
+  applied      Boolean       @default(false)
+  appliedDate  DateTime?
+  dueDate      DateTime?
+  statusId     String        @db.ObjectId
+  Status       JobStatus     @relation(fields: [statusId], references: [id])
+  JobTitle     JobTitle      @relation(fields: [jobTitleId], references: [id])
+  jobTitleId   String        @db.ObjectId
+  Company      Company       @relation(fields: [companyId], references: [id])
+  companyId    String        @db.ObjectId
+  JobSource    JobSource?    @relation(fields: [jobSourceId], references: [id])
+  jobSourceId    String?       @db.ObjectId
+  salaryRange    String?
+  salaryCurrency String?       @default("USD")
+  Location       Location?     @relation(fields: [locationId], references: [id])
+  locationId   String?       @db.ObjectId
+  Interview    Interview[]
+  Resume       Resume?       @relation(fields: [resumeId], references: [id])
+  resumeId     String?       @db.ObjectId
+  CoverLetters CoverLetter[]
+  Contacts    JobContact[]
+  MockInterviewSessions MockInterviewSession[]
+
+  // Performance indexes for frequently queried fields
+  @@index([userId, applied])
+  @@index([userId, applied, appliedDate])
+  @@index([userId, appliedDate])
+}
+
+model ContactInteraction {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  contactId   String   @db.ObjectId
+  contact     Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  type        String
+  title       String
+  description String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([contactId])
+  @@index([date])
+}
+
+model JobContact {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  jobId     String   @db.ObjectId
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  contactId String   @db.ObjectId
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  role      String?
+  createdAt DateTime @default(now())
+  
+  @@unique([jobId, contactId])
+  @@index([jobId])
+  @@index([contactId])
+}
+
+model ActivityType {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  label       String
+  value       String   @unique
+  description String?
+  createdBy   String   @db.ObjectId // userId
+  user        User     @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  Activities Activity[]
+}
+
+model Activity {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String    @db.ObjectId
+  User         User      @relation(fields: [userId], references: [id])
+  activityName String
+  startTime    DateTime
+  endTime      DateTime?
+  duration     Int?
+  description  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  activityType   ActivityType @relation(fields: [activityTypeId], references: [id])
+  activityTypeId String       @db.ObjectId
+
+  // Performance indexes for frequently queried fields
+  @@index([userId, endTime])
+  @@index([userId, createdAt])
+}
+
+model CoverLetterTemplate {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String        @db.ObjectId
+  user         User          @relation(fields: [userId], references: [id])
+  title        String
+  content      String
+  isDefault    Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  CoverLetters CoverLetter[]
+}
+
+model CoverLetter {
+  id         String               @id @default(auto()) @map("_id") @db.ObjectId
+  jobId      String               @db.ObjectId
+  job        Job                  @relation(fields: [jobId], references: [id])
+  templateId String?              @db.ObjectId
+  template   CoverLetterTemplate? @relation(fields: [templateId], references: [id])
+  title      String
+  content    String
+  version    Int                  @default(1)
+  isCurrent  Boolean              @default(true)
+  createdAt  DateTime             @default(now())
+
+  // Performance indexes
+  @@index([jobId, createdAt])
+  updatedAt  DateTime             @updatedAt
+}
+
+model MockInterviewSession {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id])
+  jobId           String?  @db.ObjectId
+  job             Job?     @relation(fields: [jobId], references: [id])
+  resumeId        String?  @db.ObjectId
+  resume          Resume?  @relation(fields: [resumeId], references: [id])
+  
+  // Session details
+  title           String   // e.g., "Software Engineer Interview - Google"
+  interviewType   String   @default("technical") // technical, behavioral, mixed
+  scenarioId      String?  // Reference to interview scenario template
+  status          String   @default("in_progress") // in_progress, completed, abandoned
+  startedAt       DateTime @default(now())
+  completedAt     DateTime?
+  duration        Int?     // Duration in minutes
+
+  // Performance indexes for frequently queried fields
+  @@index([userId, createdAt])
+  
+  // Video interview fields
+  dailyRoomId        String?  // Daily.co room identifier
+  videoRecordingUrl  String?  // Daily.co recording URL
+  videoDuration      Int?     // Actual video call duration in seconds
+  transcript         String?  // Full interview transcript
+  transcriptSegments Json?    // Timestamped transcript segments
+  conversationFlow   Json?    // Track question-answer-followup flow
+  
+  // Analysis fields
+  cheatingAnalysis   Json?    // Post-interview cheating detection results
+  behaviorMetrics    Json?    // Gaze tracking, attention metrics, etc.
+  
+  // Interview content
+  questions       MockInterviewQuestion[]
+  overallFeedback String?
+  overallScore    Int?     // Overall score out of 100
+  strengths       String[] @default([])
+  improvements    String[] @default([])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([jobId])
+}
+
+model MockInterviewQuestion {
+  id              String             @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId       String             @db.ObjectId
+  session         MockInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  // Question details
+  question        String
+  questionType    String             // behavioral, technical, situational, etc.
+  order           Int                // Question order in the interview
+  isFollowUp      Boolean            @default(false) // Whether this is a follow-up question
+  parentQuestionId String?           @db.ObjectId // Reference to parent question if follow-up
+  
+  // User response
+  userAnswer      String?
+  answeredAt      DateTime?
+  answerDuration  Int?               // Time taken to answer in seconds
+  
+  // AI feedback
+  aiFeedback      String?
+  score           Int?               // Score for this answer (0-100)
+  strengths       String[]           @default([])
+  suggestions     String[]           @default([])
+  
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  
+  @@index([sessionId])
+}
+
+model AIToolboxHistory {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id])
+  
+  // Tool identification
+  toolType    String   // personal-brand-statement, email-writer, elevator-pitch, linkedin-headline, linkedin-about, linkedin-post
+  toolName    String   // Human-readable tool name
+  
+  // Input data
+  inputData   Json     // Store the input parameters as JSON
+  
+  // Output data
+  output      String?  // Generated content
+  outputLength Int?    // Character count of output
+  
+  // Metadata
+  resumeId    String?  @db.ObjectId
+  resume      Resume?  @relation(fields: [resumeId], references: [id])
+  createdAt   DateTime @default(now())
+
+  // Performance indexes for frequently queried fields
+  @@index([userId, createdAt])
+  @@index([userId, toolType, createdAt])
+  
+  @@index([userId])
+  @@index([toolType])
+  @@index([createdAt])
+}
+
+model AppConfig {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  appName           String
+  brandName         String
+  description       String
+  primaryColor      String
+  secondaryColor    String
+  logoPath          String
+  gradientStart     String
+  gradientEnd       String
+  supportEmail      String
+  faviconPath       String?
+  faviconLetter     String
+  faviconFontSize   String
+  faviconBorderRadius String
+  faviconTextColor  String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model SubscriptionPlan {
+  id                        String   @id @default(auto()) @map("_id") @db.ObjectId
+  planKey                   String   @unique
+  name                      String
+  price                     Float
+  razorpayPlanId            String?
+  isActive                  Boolean  @default(true)
+  
+  jobs                     Int
+  resumes                  Int
+  storageMB                 Int
+  teamMembers               Int
+  
+  aiToolboxPersonalBrand    Int
+  aiToolboxEmailWriter      Int
+  aiToolboxElevatorPitch    Int
+  aiToolboxLinkedInHeadline Int
+  aiToolboxLinkedInAbout    Int
+  aiToolboxLinkedInPost     Int
+  
+  aiResumeReview            Int
+  aiJobMatching             Int
+  aiCoverLetter             Int
+  
+  mockInterviews            Int
+  
+  aiRequestsPerMonth        Int
+  
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+model AIConfig {
+  id                      String   @id @default(auto()) @map("_id") @db.ObjectId
+  featureKey              String   @unique
+  featureName             String
+  category                String   // "toolbox", "resume", "mock-interview", "other"
+  systemPrompt            String   // Admin-editable main prompt
+  mandatoryInstructions   String?  // Read-only mandatory instructions (JSON format, output constraints, etc.)
+  userPrompt              String?  // Optional user prompt template (for templated prompts)
+  outputFormat            String   @default("text") // "text", "json", "json-array", "stream"
+  jsonSchema              String?  // JSON schema for validation (if outputFormat is json)
+  requiresJsonFormat      Boolean  @default(false) // If true, mandatoryInstructions will enforce JSON format
+  promptValidationRules   String[] @default([]) // Array of validation rules (e.g., ["must-contain-json", "must-contain-summary"])
+  defaultModel            String   @default("gpt-4o-mini")
+  availableModels         String[] @default(["gpt-5.2", "gpt-5.2-pro", "gpt-5", "gpt-5-mini", "gpt-5-nano", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "o3", "o3-mini", "o3-pro", "o3-deep-research", "o4-mini", "o1", "o1-pro", "gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"])
+  defaultTemperature      Float    @default(0.7)
+  defaultMaxTokens        Int      @default(1000)
+  isActive                Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+}
+
+model AiUsage {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // "resume_parse", "job_match", "resume_review", "cover_letter", "mock_interview"
+  count     Int      @default(0)
+  limit     Int?     // Snapshot of limit at time of usage
+  period    String   // "YYYY-MM"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([userId, type, period])
+  @@index([userId, period])
+}

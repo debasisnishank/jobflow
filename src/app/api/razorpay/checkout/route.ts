@@ -10,6 +10,15 @@ import { AuthenticationError, ValidationError } from "@/lib/errors";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
+    const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+    const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (!razorpayKeyId || !razorpayKeySecret) {
+      return NextResponse.json(
+        { error: "Online payment is disabled on this deployment" },
+        { status: 503 }
+      );
+    }
+
     const user = await getCurrentUser();
 
     if (!user) {
@@ -42,7 +51,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       orderId: order.orderId,
       amount: order.amount,
       currency: order.currency,
-      keyId: process.env.RAZORPAY_KEY_ID,
+      keyId: razorpayKeyId,
       userEmail: user.email,
       userName: user.name || user.email.split("@")[0],
       successUrl,

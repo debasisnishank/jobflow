@@ -15,16 +15,16 @@ import {
 
 const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
-if (!webhookSecret) {
-  throw new Error("RAZORPAY_WEBHOOK_SECRET is not set in environment variables");
-}
-
 function verifyWebhookSignature(
   rawBody: string,
   signature: string
 ): boolean {
+  if (!webhookSecret) {
+    return false;
+  }
+
   const expectedSignature = crypto
-    .createHmac("sha256", webhookSecret!)
+    .createHmac("sha256", webhookSecret)
     .update(rawBody)
     .digest("hex");
 
@@ -36,6 +36,13 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
+    if (!webhookSecret) {
+      return NextResponse.json(
+        { error: "Razorpay webhook is disabled on this deployment" },
+        { status: 503 }
+      );
+    }
+
     const rawBody = await req.text();
     const signature = req.headers.get("x-razorpay-signature");
 

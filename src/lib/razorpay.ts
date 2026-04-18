@@ -80,14 +80,18 @@ export async function getCustomerByEmail(email: string): Promise<string | null> 
   const instance = getRazorpayInstance();
 
   try {
-    const customers = await instance.customers.all({
-      email,
-      limit: 1,
-    });
+    const customers = (await instance.customers.all({
+      count: 100,
+    })) as { items?: Array<{ id: string; email?: string }> };
 
-    if (customers.items && customers.items.length > 0) {
-      return customers.items[0].id;
+    const matchingCustomer = customers.items?.find(
+      (customer) => customer.email?.toLowerCase() === email.toLowerCase()
+    );
+
+    if (matchingCustomer) {
+      return matchingCustomer.id;
     }
+
     return null;
   } catch (error) {
     // If customer not found, return null
@@ -165,7 +169,7 @@ export async function createOrder(
 
     return {
       orderId: order.id,
-      amount: order.amount,
+      amount: Number(order.amount),
       currency: order.currency,
     };
   } catch (error) {

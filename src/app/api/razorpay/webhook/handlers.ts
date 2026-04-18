@@ -8,7 +8,8 @@ import { SubscriptionPlan } from "@/lib/subscription-plans";
 export async function handlePaymentCaptured(
   payload: RazorpayPaymentPayload
 ): Promise<void> {
-  const { payload: paymentData, payload: { notes } } = payload;
+  const paymentData = payload.payload.payment.entity;
+  const notes = paymentData.notes;
   const userId = notes?.userId;
   const planId = notes?.planId as SubscriptionPlan | undefined;
   const customerId = notes?.customerId;
@@ -33,7 +34,7 @@ export async function handlePaymentCaptured(
 export async function handleSubscriptionActivated(
   payload: RazorpaySubscriptionPayload
 ): Promise<void> {
-  const { payload: subData } = payload;
+  const subData = payload.payload.subscription.entity;
   const userId = subData.notes?.userId as string | undefined;
   const planId = subData.notes?.planId as SubscriptionPlan | undefined;
   const customerId = subData.customer_id as string | undefined;
@@ -59,7 +60,7 @@ export async function handleSubscriptionActivated(
 export async function handleSubscriptionUpdated(
   payload: RazorpaySubscriptionPayload
 ): Promise<void> {
-  const { payload: subData } = payload;
+  const subData = payload.payload.subscription.entity;
   const planId = subData.notes?.planId as SubscriptionPlan | undefined;
   const customerId = subData.customer_id as string | undefined;
 
@@ -107,7 +108,7 @@ export async function handleSubscriptionUpdated(
 export async function handleSubscriptionCancelled(
   payload: RazorpaySubscriptionPayload
 ): Promise<void> {
-  const { payload: subData } = payload;
+  const subData = payload.payload.subscription.entity;
   const customerId = subData.customer_id as string | undefined;
 
   if (!customerId) {

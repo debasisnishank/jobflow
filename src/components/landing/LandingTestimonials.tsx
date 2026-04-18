@@ -11,7 +11,7 @@ if (typeof window !== "undefined") {
 
 const testimonials = [
     {
-        quote: "JobFlow helped me track over 50 applications and finally land my dream job at a tech startup. The AI resume review was a game changer!",
+        quote: "This platform helped me track over 50 applications and finally land my dream job at a tech startup. The AI resume review was a game changer!",
         author: "Michael Chen",
         role: "Software Engineer"
     },

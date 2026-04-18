@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useAppConfigContext } from "@/contexts/AppConfigContext";
 
 if (typeof window !== "undefined") {
     gsap.registerPlugin(ScrollTrigger);
@@ -67,6 +68,7 @@ const platformBenefits = [
 ];
 
 export function LandingValueProps() {
+    const { config } = useAppConfigContext();
     const sectionRef = useRef<HTMLDivElement>(null);
     const leftColRef = useRef<HTMLDivElement>(null);
     const rightColRef = useRef<HTMLDivElement>(null);
@@ -154,7 +156,7 @@ export function LandingValueProps() {
                         <div>
                             <p className="text-sm font-medium text-indigo-600 mb-2">Built for success</p>
                             <h2 className="text-3xl md:text-4xl font-bold text-slate-900">
-                                Why JobFlow helps
+                                Why {config.brandName} helps
                             </h2>
                         </div>
 

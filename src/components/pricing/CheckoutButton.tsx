@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { SubscriptionPlan } from "@/lib/subscription-plans";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import { useAppConfigContext } from "@/contexts/AppConfigContext";
 
 interface CheckoutButtonProps {
   planId: SubscriptionPlan;
@@ -60,6 +61,7 @@ export default function CheckoutButton({
   variant = "default",
 }: CheckoutButtonProps) {
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const { config } = useAppConfigContext();
 
   // Load Razorpay script on mount
   useEffect(() => {
@@ -131,7 +133,7 @@ export default function CheckoutButton({
         key: keyId,
         amount: String(amount),
         currency,
-        name: "JobFlow",
+        name: config.brandName || "JobFlow",
         description: `${planName} Plan Subscription`,
         order_id: orderId,
         prefill: {

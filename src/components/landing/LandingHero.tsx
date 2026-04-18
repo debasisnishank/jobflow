@@ -16,6 +16,7 @@ if (typeof window !== "undefined") {
 
 export function LandingHero() {
   const { config } = useAppConfigContext();
+  const brandName = config.brandName || "JobFlow";
   const heroRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
@@ -181,7 +182,7 @@ export function LandingHero() {
                   <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
                     <Briefcase className="w-4 h-4 text-white" />
                   </div>
-                  <span className="text-sm font-bold text-slate-800">JobFlow</span>
+                  <span className="text-sm font-bold text-slate-800">{brandName}</span>
                 </div>
 
                 {/* Navigation */}

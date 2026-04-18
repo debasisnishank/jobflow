@@ -7,8 +7,8 @@ const prisma = new PrismaClient();
 
 async function seedUser() {
   try {
-    const password = await bcrypt.hash(process.env.USER_PASSWORD, 10);
-    const email = process.env.USER_EMAIL;
+    const email = process.env.USER_EMAIL || "admin@jobflow.local";
+    const password = await bcrypt.hash(process.env.USER_PASSWORD || "Admin123!", 10);
     // Normalize email to match how it's stored during signup (lowercase + trim)
     const normalizedEmail = email ? email.toLowerCase().trim() : email;
     // Check if the user already exists
@@ -23,11 +23,18 @@ async function seedUser() {
           email: normalizedEmail,
           name: "Admin",
           password,
+          role: "admin",
         },
       });
-      console.log("Seeded new user: ", { email: normalizedEmail });
+      console.log("Seeded new admin user: ", { email: normalizedEmail, role: "admin" });
     } else {
-      console.log("User already exists: ", { email: normalizedEmail });
+      if ((existingUser.role || "").toLowerCase() !== "admin") {
+        await prisma.user.update({
+          where: { email: normalizedEmail },
+          data: { role: "admin" },
+        });
+      }
+      console.log("Admin user already exists or was promoted: ", { email: normalizedEmail, role: "admin" });
     }
   } catch (error) {
     console.error("Error seeding user: ", error);

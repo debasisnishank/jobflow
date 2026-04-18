@@ -3,7 +3,7 @@
   "buildCommand": "prisma generate && npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
-  "regions": ["blr1"],
+  "regions": ["bom1"],
   "env": {
     "NODE_ENV": "production"
   },
